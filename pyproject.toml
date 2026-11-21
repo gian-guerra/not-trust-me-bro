@@ -11,7 +11,9 @@ requires-python = ">=3.13"
 dependencies = [
     "pydantic-settings>=2.16.3",
     "pymupdf>=2.1",
+    "sentence-transformers>=6.3.0",
     "typer>=0.29.2",
+    "weaviate-client>=4.24.1",
 ]
 
 [project.scripts]

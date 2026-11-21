@@ -18,6 +18,17 @@ class Settings(BaseSettings):
     weaviate_http_port: int = 8080
     weaviate_grpc_port: int = 50051
 
+    # Chunking (defaults derived from the starter corpus, see chunking.chunk_pages)
+    chunk_max_tokens: int = 320
+    chunk_overlap_tokens: int = 75
+    chunk_min_tokens: int = 65
+
+    # Embeddings. bge-small: 512-token input (no chunk truncated), 384 dims, fast on CPU/MPS.
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    # BGE models are trained to embed short queries with this instruction in front;
+    # documents are embedded as they are.
+    embedding_query_prefix: str = "Represent this sentence for searching relevant passages: "
+
     # LLM, in LiteLLM's "provider/model" format
     llm_model: str = "ollama/qwen3:14b"
 
