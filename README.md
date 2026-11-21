@@ -56,6 +56,21 @@ Your question ──► Embed ──► Retrieve relevant chunks ┘
 
 🚧 Early stage. Project scaffolding and design.
 
+## Development
+
+Requires [uv](https://docs.astral.sh/uv/) and Docker.
+
+```bash
+uv sync                  # install dependencies
+cp .env.example .env     # local settings (git-ignored)
+docker compose up -d     # start Weaviate on :8080 (REST) and :50051 (gRPC)
+uv run ntmb --help       # the CLI
+uv run pytest            # tests
+uv run ruff check .      # lint
+```
+
+Put your source documents in `data/`. It's git-ignored, because most books and papers are copyrighted.
+
 ## License
 
 [MIT](LICENSE)
