@@ -1,0 +1,33 @@
+[project]
+name = "not-trust-me-bro"
+version = "0.1.0"
+description = "A RAG system for study and research that answers only from your own sources."
+authors = [
+    { name = "gian-guerra", email = "gian.guerra.engineer@gmail.com" }
+]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic-settings>=2.16.3",
+    "typer>=0.29.2",
+]
+
+[project.scripts]
+ntmb = "not_trust_me_bro.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
