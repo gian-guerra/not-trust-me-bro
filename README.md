@@ -54,7 +54,31 @@ Your question ──► Embed ──► Retrieve relevant chunks ┘
 
 ## Status
 
-🚧 Early stage. Project scaffolding and design.
+🚧 Iteration 1: the core pipeline works end to end from the CLI. Evaluation is next.
+
+## Usage
+
+Requires [uv](https://docs.astral.sh/uv/), Docker, and either [Ollama](https://ollama.com) (`ollama pull qwen3:14b`) or an OpenAI key.
+
+```bash
+uv sync && cp .env.example .env
+docker compose up -d                       # Weaviate
+
+uv run ntmb ingest data/                   # a PDF or a folder; unchanged files are skipped
+uv run ntmb sources                        # what's in your library
+uv run ntmb ask "Why do people defer to high-status people?"
+```
+
+`ask` prints the answer with numbered citations and the passages behind them (★ = cited). If your sources don't cover the question, it says so instead of guessing. Useful options:
+
+```bash
+uv run ntmb ask "..." -s paper.pdf         # search one document (repeatable)
+uv run ntmb ask "..." --think              # local model reasons first: slower, more careful
+uv run ntmb ask "..." --model openai/gpt-6-luna   # needs NTMB_OPENAI_API_KEY in .env
+uv run ntmb ask "..." --show-sources       # print the full text of every passage
+```
+
+Defaults live in `.env` (see `.env.example`); `uv run ntmb config` shows the current ones.
 
 ## Development
 

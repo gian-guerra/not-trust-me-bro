@@ -10,6 +10,7 @@ and its document's fingerprint, which makes re-ingestion idempotent (see pipelin
 import re
 
 import weaviate
+from weaviate.classes.aggregate import GroupByAggregate
 from weaviate.classes.config import Configure, DataType, Property, Tokenization, VectorDistances
 from weaviate.classes.query import Filter
 from weaviate.util import generate_uuid5
@@ -111,3 +112,10 @@ class ChunkStore:
     def count(self, source: str | None = None) -> int:
         filters = Filter.by_property("source").equal(source) if source else None
         return self.collection.aggregate.over_all(filters=filters, total_count=True).total_count
+
+    def sources(self) -> dict[str, int]:
+        """Every stored document and its number of chunks, by name."""
+        result = self.collection.aggregate.over_all(
+            group_by=GroupByAggregate(prop="source"), total_count=True
+        )
+        return dict(sorted((g.grouped_by.value, g.total_count) for g in result.groups))
