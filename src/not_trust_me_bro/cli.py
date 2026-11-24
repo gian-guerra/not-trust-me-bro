@@ -1,5 +1,6 @@
 """Command-line interface. Keep it thin: parse arguments, call the library, print."""
 
+import logging
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -40,23 +41,23 @@ def ingest(
     if not pdfs:
         raise fail(f"No PDFs found in {path}")
 
+    _show_progress_logs()
     failed = 0
     with _rag() as rag:
-        for pdf in pdfs:
+        for i, pdf in enumerate(pdfs, 1):
+            typer.secho(f"[{i}/{len(pdfs)}] {pdf.name}", bold=True)
             start = time.perf_counter()
             try:
                 result = rag.ingest(pdf, force=force)
             except Exception as e:  # one bad file must not stop the others
                 failed += 1
-                typer.secho(f"  ✗ {pdf.name}: {e}", fg="red")
+                typer.secho(f"      ✗ failed: {e}", fg="red")
                 continue
             took = time.perf_counter() - start
             if result.status == "unchanged":
-                typer.echo(f"  = {result.source}: unchanged ({result.chunks} chunks)")
+                typer.echo(f"      = unchanged since last ingest ({result.chunks} chunks), skipped")
             else:
-                typer.secho(
-                    f"  ✓ {result.source}: {result.chunks} chunks ({took:.1f}s)", fg="green"
-                )
+                typer.secho(f"      ✓ ingested: {result.chunks} chunks · {took:.1f}s", fg="green")
 
     typer.echo(f"\n{len(pdfs) - failed}/{len(pdfs)} documents ready.")
     if failed:
@@ -125,6 +126,17 @@ def _rag() -> Iterator[Rag]:
         yield rag
     finally:
         session.__exit__(None, None, None)
+
+
+def _show_progress_logs() -> None:
+    """Print our own INFO logs (one line per ingestion stage). Libraries stay at WARNING."""
+    logger = logging.getLogger("not_trust_me_bro")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("      %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
 
 
 def _print_answer(a: Answer, show_sources: bool) -> None:

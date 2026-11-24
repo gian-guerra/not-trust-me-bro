@@ -7,6 +7,8 @@ produce fewer chunks, and the leftover old ones would otherwise stay as stale du
 """
 
 import hashlib
+import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol
@@ -15,6 +17,9 @@ from not_trust_me_bro.chunking import chunk_pages
 from not_trust_me_bro.config import Settings
 from not_trust_me_bro.ingestion import load_pdf
 from not_trust_me_bro.store import ChunkStore
+
+# One INFO line per stage, with its duration. The CLI prints them under the document's name.
+log = logging.getLogger(__name__)
 
 
 class DocumentEmbedder(Protocol):
@@ -46,12 +51,24 @@ def ingest_file(
     if not force and store.stored_fingerprint(path.name) == fp:
         return IngestResult(path.name, "unchanged", store.count(path.name))
 
+    t = time.perf_counter()
+    pages = load_pdf(path)
+    log.info("read %d pages (references dropped) · %.1fs", len(pages), time.perf_counter() - t)
+
+    t = time.perf_counter()
     chunks = chunk_pages(
-        load_pdf(path),
+        pages,
         max_tokens=settings.chunk_max_tokens,
         overlap_tokens=settings.chunk_overlap_tokens,
         min_tokens=settings.chunk_min_tokens,
     )
+    log.info("split into %d chunks · %.1fs", len(chunks), time.perf_counter() - t)
+
+    t = time.perf_counter()
     vectors = embedder.embed_documents([c.text for c in chunks])
+    log.info("embedded %d chunks · %.1fs", len(vectors), time.perf_counter() - t)
+
+    t = time.perf_counter()
     store.replace_document(chunks, vectors, fp)
+    log.info("stored in Weaviate · %.1fs", time.perf_counter() - t)
     return IngestResult(path.name, "ingested", len(chunks))

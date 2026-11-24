@@ -70,9 +70,10 @@ def test_ingest_reports_every_file_and_keeps_going_after_a_failure(fake, tmp_pat
         (tmp_path / name).touch()
     result = runner.invoke(cli.app, ["ingest", str(tmp_path)])
 
-    assert "✓ new.pdf: 12 chunks" in result.output
-    assert "= old.pdf: unchanged" in result.output
-    assert "✗ broken.pdf: cannot open broken document" in result.output
+    out = result.output
+    assert "[1/3] broken.pdf\n      ✗ failed: cannot open broken document" in out
+    assert "[2/3] new.pdf\n      ✓ ingested: 12 chunks" in out
+    assert "[3/3] old.pdf\n      = unchanged since last ingest (12 chunks)" in out
     assert "2/3 documents ready" in result.output
     assert result.exit_code == 1
 

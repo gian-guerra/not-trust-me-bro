@@ -5,11 +5,14 @@ length 1. Documents and queries are embedded differently: BGE models expect an i
 in front of short queries, never in front of documents.
 """
 
+import logging
 from functools import cached_property
 
 from huggingface_hub.utils import logging as hf_logging
 from sentence_transformers import SentenceTransformer
 from transformers.utils import logging as transformers_logging
+
+log = logging.getLogger(__name__)
 
 
 class TruncationError(ValueError):
@@ -28,6 +31,7 @@ class Embedder:
         # Quiet: no weight-loading progress bar, no "unauthenticated HF Hub requests" notice.
         transformers_logging.disable_progress_bar()
         hf_logging.set_verbosity_error()
+        log.info("loading embedding model %s (once per run)", self.model_name)
         return SentenceTransformer(self.model_name)
 
     @property
