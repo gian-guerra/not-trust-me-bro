@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     # Only needed when llm_model points to OpenAI. SecretStr hides it in logs and reprs.
     openai_api_key: SecretStr | None = None
 
+    def llm_api_key(self) -> str | None:
+        """The key for the configured LLM, or None for local models (and to let LiteLLM fall
+        back to the standard OPENAI_API_KEY variable)."""
+        if self.llm_model.startswith("openai/") and self.openai_api_key:
+            return self.openai_api_key.get_secret_value()
+        return None
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,5 +1,6 @@
 import os
 
+import litellm
 import pytest
 
 from not_trust_me_bro.answers import (
@@ -113,6 +114,41 @@ def test_think_is_sent_to_local_models_only():
     answer("q", CHUNKS, "openai/gpt-4o-mini", think=True, api_key="sk-x", complete=remote)
     assert local.calls[0]["think"] is True
     assert "think" not in remote.calls[0] and remote.calls[0]["api_key"] == "sk-x"
+
+
+class RejectsTemperature(FakeLLM):
+    """Like OpenAI reasoning models: any temperature other than the default is a 400."""
+
+    def __call__(self, model, messages, **kwargs) -> str:
+        if "temperature" in kwargs:
+            self.calls.append(kwargs)
+            raise litellm.BadRequestError(
+                "Unsupported value: 'temperature' does not support 0.1", model, "openai"
+            )
+        return super().__call__(model, messages, **kwargs)
+
+
+def test_models_that_reject_temperature_are_retried_without_it():
+    llm = RejectsTemperature("Status matters [2].")
+    a = answer("q", CHUNKS, "openai/gpt-6-luna", complete=llm)
+    assert a.text == "Status matters [2]."
+    assert "temperature" not in llm.calls[-1]
+
+
+def test_other_bad_requests_are_not_swallowed():
+    def broken(model, messages, **kwargs):
+        raise litellm.BadRequestError("context length exceeded", model, "openai")
+
+    with pytest.raises(litellm.BadRequestError):
+        answer("q", CHUNKS, "openai/gpt-6-luna", complete=broken)
+
+
+def test_the_openai_key_is_only_used_for_openai_models():
+    from not_trust_me_bro.config import Settings
+
+    key = "sk-test"
+    assert Settings(llm_model="openai/gpt-6-luna", openai_api_key=key).llm_api_key() == key
+    assert Settings(llm_model="ollama_chat/qwen3:14b", openai_api_key=key).llm_api_key() is None
 
 
 # --- real local model (opt-in: NTMB_TEST_LLM=1, needs Ollama) --------------------------------

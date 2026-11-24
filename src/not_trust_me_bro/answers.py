@@ -119,7 +119,17 @@ def answer(
     if api_key:
         kwargs["api_key"] = api_key
 
-    text = complete(model, build_messages(question, chunks), **kwargs).strip()
+    messages = build_messages(question, chunks)
+    try:
+        text = complete(model, messages, **kwargs)
+    except litellm.BadRequestError as e:
+        # OpenAI reasoning models (o-series, gpt-5+) accept only their default temperature and
+        # reject any other value. Retry once without it rather than failing the question.
+        if "temperature" not in str(e).lower():
+            raise
+        kwargs.pop("temperature")
+        text = complete(model, messages, **kwargs)
+    text = text.strip()
     numbers = cited_numbers(text)
     return Answer(
         question=question,
