@@ -38,10 +38,21 @@ class Settings(BaseSettings):
     retrieval_fusion: Literal["relative_score", "ranked"] = "relative_score"
 
     # LLM, in LiteLLM's "provider/model" format
-    llm_model: str = "ollama/qwen3:14b"
+    # `ollama_chat/` is LiteLLM's chat endpoint for Ollama (supports system prompts properly).
+    llm_model: str = "ollama_chat/qwen3:14b"
+    llm_temperature: float = 0.1  # low: report what the sources say, no creative variation
+    # Local thinking models reason before answering: ~10x slower (14s vs 1.4s measured).
+    llm_think: bool = False
 
     # Only needed when llm_model points to OpenAI. SecretStr hides it in logs and reprs.
     openai_api_key: SecretStr | None = None
+
+    def llm_api_key(self) -> str | None:
+        """The key for the configured LLM, or None for local models (and to let LiteLLM fall
+        back to the standard OPENAI_API_KEY variable)."""
+        if self.llm_model.startswith("openai/") and self.openai_api_key:
+            return self.openai_api_key.get_secret_value()
+        return None
 
 
 @lru_cache

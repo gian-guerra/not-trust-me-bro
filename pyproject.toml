@@ -9,6 +9,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
+    "litellm>=1.110.3",
     "pydantic-settings>=2.16.3",
     "pymupdf>=2.1",
     "sentence-transformers>=6.3.0",
