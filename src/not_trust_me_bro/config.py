@@ -5,6 +5,7 @@ e.g. `NTMB_LLM_MODEL=openai/gpt-4o-mini`. Settings are added here as each task n
 """
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,13 @@ class Settings(BaseSettings):
     # BGE models are trained to embed short queries with this instruction in front;
     # documents are embedded as they are.
     embedding_query_prefix: str = "Represent this sentence for searching relevant passages: "
+
+    # Retrieval. Provisional defaults: on hand-checked questions, hybrid was never worse than
+    # the better of semantic and BM25. PER-15 tunes them against the eval set.
+    retrieval_mode: Literal["semantic", "bm25", "hybrid"] = "hybrid"
+    retrieval_k: int = 5
+    retrieval_alpha: float = 0.5  # 1.0 = pure semantic, 0.0 = pure BM25
+    retrieval_fusion: Literal["relative_score", "ranked"] = "relative_score"
 
     # LLM, in LiteLLM's "provider/model" format
     llm_model: str = "ollama/qwen3:14b"
