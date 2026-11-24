@@ -1,6 +1,7 @@
 """Command-line interface. Keep it thin: parse arguments, call the library, print."""
 
 import logging
+import sys
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -132,7 +133,7 @@ def _show_progress_logs() -> None:
     """Print our own INFO logs (one line per ingestion stage). Libraries stay at WARNING."""
     logger = logging.getLogger("not_trust_me_bro")
     if not logger.handlers:
-        handler = logging.StreamHandler()
+        handler = logging.StreamHandler(sys.stdout)  # same stream as the headers: keeps order
         handler.setFormatter(logging.Formatter("      %(message)s"))
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
