@@ -5,7 +5,14 @@ length 1. Documents and queries are embedded differently: BGE models expect an i
 in front of short queries, never in front of documents.
 """
 
+import logging
+from functools import cached_property
+
+from huggingface_hub.utils import logging as hf_logging
 from sentence_transformers import SentenceTransformer
+from transformers.utils import logging as transformers_logging
+
+log = logging.getLogger(__name__)
 
 
 class TruncationError(ValueError):
@@ -17,9 +24,23 @@ class Embedder:
     def __init__(self, model_name: str, query_prefix: str = "") -> None:
         self.model_name = model_name
         self.query_prefix = query_prefix
-        self._model = SentenceTransformer(model_name)
-        self.dimensions: int = self._model.get_embedding_dimension()
-        self.max_tokens: int = self._model.max_seq_length
+
+    @cached_property
+    def _model(self) -> SentenceTransformer:
+        # Loaded on first use (a few seconds): re-ingesting unchanged files never needs it.
+        # Quiet: no weight-loading progress bar, no "unauthenticated HF Hub requests" notice.
+        transformers_logging.disable_progress_bar()
+        hf_logging.set_verbosity_error()
+        log.info("loading embedding model %s (once per run)", self.model_name)
+        return SentenceTransformer(self.model_name)
+
+    @property
+    def dimensions(self) -> int:
+        return self._model.get_embedding_dimension()
+
+    @property
+    def max_tokens(self) -> int:
+        return self._model.max_seq_length
 
     def count_tokens(self, text: str) -> int:
         """Exact token count with the model's own tokenizer, special tokens included."""

@@ -35,3 +35,9 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # PyMuPDF SWIG bindings on Python 3.13, harmless (see not_trust_me_bro/__init__.py)
+    "ignore:builtin type .* has no __module__:DeprecationWarning",
+]
